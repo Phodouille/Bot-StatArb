@@ -1,0 +1,43 @@
+# Risk parameters — single source of truth.
+# Ne jamais mettre de valeurs en dur dans le code Python.
+# Toute modification ici affecte risk/, execution/, backtest/ et le dashboard.
+# Coordonner avec l'équipe avant de changer la structure ou les clés.
+
+position:
+  # Poids maximum qu'un seul ticker peut représenter dans le portefeuille (fraction).
+  # Référence CLAUDE.md : 5-10% → on cible 10% comme plafond dur.
+  max_weight_per_ticker: 0.10
+
+  # Poids minimum en dessous duquel un signal est ignoré (évite les nano-positions).
+  min_weight_per_ticker: 0.001
+
+  # Exposition brute maximale : sum(|weights|) <= max_gross_exposure.
+  # 1.5 = 150% brut (75% long + 75% short), levier modéré pour un compte cash.
+  max_gross_exposure: 1.5
+
+  # Exposition nette maximale : |sum(long) - sum(short)| <= max_net_exposure.
+  # 0.10 = 10% de déviation tolérée autour de la neutralité.
+  max_net_exposure: 0.10
+
+drawdown:
+  # Seuil de déclenchement du kill switch automatique (fraction, positif).
+  # Référence CLAUDE.md : 5% → trading suspendu jusqu'à reset manuel.
+  kill_switch_threshold: 0.05
+
+  # Seuil d'alerte précoce avant le kill switch (fraction, positif).
+  # Génère un logging.warning sans bloquer le trading.
+  warning_threshold: 0.03
+
+sizing:
+  # Fraction du portefeuille allouée aux positions actives (le reste reste en cash).
+  # 0.50 = 50% investi, 50% de buffer pour absorber les appels de marge / T+2.
+  portfolio_fraction: 0.50
+
+  # Nombre maximum de positions simultanées (toutes directions confondues).
+  # En cas de dépassement, on garde les |z_score| les plus élevés.
+  max_positions: 20
+
+transaction:
+  # Coût de transaction modélisé en basis points par trade (aller simple).
+  # Référence CLAUDE.md : 5-10 bps → 7.5 bps comme valeur centrale.
+  cost_bps: 7.5

@@ -1,38 +1,53 @@
 # StatArb Bot
 
-PCA + mean-reversion statistical arbitrage bot on 40-50 liquid US tech
-stocks, with an adaptive PCA window and VIX/credit-spread macro filters as
-differentiating features over a classic stat arb baseline. Paper trading on
-Alpaca (cash account); 4 configurable benchmark levels in one codebase.
+Statistical arbitrage bot using PCA + mean-reversion on 40-50 liquid US tech stocks (S&P 500). Two differentiating features over a classic stat arb baseline:
 
-Full architecture, contracts between modules, and global rules live in
-[`CLAUDE.md`](./CLAUDE.md) — read that before writing code in any module.
+- **Adaptive PCA window** — adjusts dynamically to market volatility instead of a fixed lookback
+- **Macro filters** — VIX + credit spreads reduce/suspend trading during stress regimes when mean-reversion breaks down
+
+Paper trading on Alpaca (cash account). Four configurable benchmark levels in one codebase: buy-and-hold S&P500 → equal-weight sector → classic PCA stat arb → adaptive model with macro filters.
 
 ## Setup
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # fill in your Alpaca paper keys
+cp .env.example .env   # fill in your Alpaca paper API keys
 ```
 
-## Working with Claude Code
+## Run the dashboard
 
-Four project subagents are defined in `.claude/agents/`: `data-ingestion`,
-`signals`, `backtest`, `risk`. Each is scoped to its own folder and reads
-`CLAUDE.md` for the shared contracts before doing anything. Run `/agents`
-inside Claude Code at the repo root to confirm they're picked up.
-
-Each agent uses `isolation: worktree`, so they can be run in parallel
-safely from a single Claude Code session without stepping on each other's
-files — e.g.:
-
+```bash
+streamlit run dashboard/app.py
 ```
-Use the data-ingestion, signals, backtest, and risk subagents in parallel
-to scaffold their respective modules per CLAUDE.md.
+
+Opens at `http://localhost:8501` — three pages:
+- **Backtest** — compare all 4 benchmark levels, NAV chart, performance metrics, drawdown
+- **Signals** — live z-score heatmap, macro filter status, active positions
+- **Risk Monitor** — kill switch status, drawdown gauge, risk limits
+
+## Run the tests
+
+```bash
+python -m pytest tests/ -v
 ```
 
 ## Repo structure
 
-See the "Structure du repo" section in `CLAUDE.md` for which module maps to
-which team member.
+```
+data/        Price data pipeline (Alpaca fetch, cleaning, parquet storage)
+signals/     PCA, z-score, adaptive window, macro filters
+backtest/    Backtest engine — all 4 benchmark levels
+execution/   Order execution via Alpaca
+risk/        Position sizing, drawdown kill switch, exposure checks
+dashboard/   Streamlit app
+config/      Universe, risk parameters
+tests/       Unit tests
+```
+
+## Risk guardrails
+
+- Max position per ticker: 5–10% of portfolio
+- Kill switch triggers at 5% drawdown
+- Market-neutral: long exposure ≈ short exposure
+- Capital: 100k$ paper account on Alpaca
